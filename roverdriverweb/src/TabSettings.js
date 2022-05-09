@@ -133,7 +133,9 @@ class TabSettings extends React.Component {
                 </SettingsGroup>
             </StyledCard>
             <StyledCard title="App Info" centered>
-                <Text margin={{ 'bottom': 'small' }}>App built by Team 07 - MECH 462 at Queen's University for the Canadian Space Agency</Text>
+                <Text margin={{ 'bottom': 'small' }}>App built for the Canadian Space Agency lunar rover earth-based prototype</Text>
+                <Text margin={{ 'bottom': 'small' }}>App created by Team 07 - MECH 462 at Queen's University</Text>
+                <Text margin={{ 'bottom': 'small' }}>App updated by Team 20 - MECH 490 at Concordia University</Text>
                 <Text>Build time: BUILD_DATE</Text>
                 <Text>Build hash: BUILD_HASH</Text>
             </StyledCard>

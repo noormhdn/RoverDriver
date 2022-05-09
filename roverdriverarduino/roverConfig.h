@@ -65,10 +65,10 @@
 #define INTERVAL_SLOW 4800
 
 // Motor Controllers
-#define I2C_JRK_FRONT_RIGHT 15
-#define I2C_JRK_FRONT_LEFT 14
-#define I2C_JRK_REAR_RIGHT 13
-#define I2C_JRK_REAR_LEFT 12
+#define I2C_JRK_FRONT_RIGHT 13
+#define I2C_JRK_FRONT_LEFT 15
+#define I2C_JRK_REAR_RIGHT 12
+#define I2C_JRK_REAR_LEFT 14
 
 //    READ_BUFSIZE            Size of the BLE read buffer for incoming packets
 #define READ_BUFSIZE (20)
@@ -108,6 +108,12 @@
 #define RX_CONTROLLER_RR_LEN 1
 #define RX_CONTROLLER_RL (0xD4)
 #define RX_CONTROLLER_RL_LEN 1
+
+// Maneuvers
+#define RX_STRAIGHT_DRIVE (0xE0)
+#define RX_TURN (0xE1)
+#define RX_POINT_TURN (0xE2)
+#define RX_SUNKEN_WHEEL (0xE3)
 
 typedef void (*rover_connect_callback_t)(char *conn_hdl);
 typedef void (*rover_disconnect_callback_t)(uint8_t reason);

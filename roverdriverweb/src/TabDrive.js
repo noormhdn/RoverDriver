@@ -1,5 +1,5 @@
 import React from 'react';
-import { Collapsible, Box, Diagram, Stack, Button, RangeInput, Image, Distribution, Text, Table, TableHeader, TableRow, TableCell, TableBody, ResponsiveContext, Heading } from "grommet";
+import { Collapsible, Box, Diagram, Stack, Button, RangeInput, Image, Distribution, Text, Table, TableHeader, TableRow, TableCell, TableBody, ResponsiveContext, Heading, Menu, RadioButtonGroup, TextInput, Form, FormField, Tab, Tabs } from "grommet";
 import { SettingsGroup, StyledCard } from "./CommonUI";
 import { Trigger, Halt, Power, Add, Subtract, CaretUp, CaretDown, CaretNext, CaretPrevious, StatusCritical } from 'grommet-icons'
 import ls from 'local-storage'
@@ -11,16 +11,41 @@ import arrowLight from './arrow-light.png';
 import escDark from './esc-dark.png';
 import escLight from './esc-light.png';
 
+const value = '';
+
 class TabDrive extends React.Component {
 
     constructor(props) {
         super(props);
         this.state = {
-            lightMode: false
+            lightMode: false,
+            value: '',
+            straightSpeed: '',
+            motionDirection: '',
+            turnSpeed: '',
+            turnRadius: '',
+            turnDirection: '',
+            pointSpeed: '',
+            pointDirection: '',
+            sunkManeuver: ''
         };
         this.handleDriveStart = this.handleDriveStart.bind(this);
         this.handleDriveStop = this.handleDriveStop.bind(this);
         this.handleSpeedChange = this.handleSpeedChange.bind(this);
+        this.defaultValue = {
+            straightSpeed: '',
+            turnSpeed: '',
+            turnRadius: '',
+            pointSpeed: ''
+        };
+        this.commandedValue = { // May be deleted?
+            straightSpeed: '',
+            turnSpeed: '',
+            turnRadius: '',
+            pointSpeed: ''
+        };
+        /*this.onChange = this.onChange.bind(this);*/
+        this.handleCommandChange = this.handleCommandChange.bind(this);
     }
 
     componentDidMount() {
@@ -69,88 +94,126 @@ class TabDrive extends React.Component {
         this.props.rover.queueMessage(keycode, 0x00);
     }
 
+    logs = () => {
+        console.log(this.state.straightSpeed);
+        console.log(this.state.turnSpeed);
+        console.log(this.state.turnRadius);
+    }
+
+    handleManeuver = (event, manCode, preventDefault = true) => {
+        let spLimit = 30; //set the upper limit of the speed in cm/s to avoid hardware damage
+        let tuLimit = 20; //set the lower limit of the turn radius in cm to avoid hardware damage
+        if (preventDefault) event.preventDefault();
+        switch (manCode) {
+            case 0xE0: //Straight Driving
+                //this.props.rover.queueMessage(0xE0, this.state.straightSpeed);
+                let stSpeed = this.state.straightSpeed;
+                if (stSpeed.length > 4) { alert("Speed input cannot exceed 4 digits. Please reset the inputs.") }
+                else if (Math.abs(stSpeed) > spLimit) { alert("Speed input cannot exceed " + spLimit + " cm/s. Please reset the inputs.") }
+                else {
+                    this.props.rover.queueMessage(0xE0, stSpeed);
+                    console.log("Straight drive maneuver commanded");
+                    console.log(this.state.straightSpeed);
+                    console.log(stSpeed);
+                }
+                break;
+            case 0xE1: //Turn
+                let tuSpeed = this.state.turnSpeed;
+                let tuRadius = this.state.turnRadius;
+                let tuDirection = this.state.turnDirection;
+                if (tuDirection == "Right turn") { tuDirection = "R" }
+                else if (tuDirection == "Left turn") { tuDirection = "L" }
+                else {console.log("Please select a turn direction")}
+                //setting the boundaries for user input commands to avoid software bugs or hardware limits
+                if (tuSpeed.length > 4) { alert("Speed input cannot exceed 4 digits. Please reset the inputs.")}
+                else if (Math.abs(tuSpeed) > spLimit) { alert("Speed input cannot exceed " + spLimit + " cm/s. Please reset the inputs.")}
+                else if (tuRadius.length > 4) { alert("Turn radius input cannot exceed 4 digits. Please reset the inputs.") }
+                else if (tuRadius < tuLimit) { alert("Turn radius input cannot be below " + tuLimit + " cm. Please reset the inputs.") }
+                else {
+                    let placeHolder = 0;
+                    placeHolder = 4 - tuSpeed.length;
+                    for (let i = 1; i <= placeHolder; i++) {
+                        tuSpeed = (tuSpeed + "x");
+                    }
+                    placeHolder = 4 - tuRadius.length;
+                    for (let i = 1; i <= placeHolder; i++) {
+                        tuRadius = (tuRadius + "x");
+                    }
+                    console.log("Turn drive maneuver commanded");
+                    console.log(this.state.turnSpeed);
+                    console.log(tuSpeed);
+                    console.log(this.state.turnRadius);
+                    console.log(tuRadius);
+                    console.log(tuDirection);
+                    let cmd = (tuSpeed + tuRadius + tuDirection);
+                    console.log(cmd)
+                    this.props.rover.queueMessage(0xE1, cmd);
+                };
+                break;
+            case 0xE2: //Point Turn
+                let ptSpeed = this.state.pointSpeed;
+                let ptDirection = this.state.pointDirection;
+                if (ptDirection == "Right turn") { ptDirection = "R" }
+                else if (ptDirection == "Left turn") { ptDirection = "L" }
+                else { console.log("Please select a turn direction") }
+                //setting the boundaries for user input commands to avoid software bugs or hardware limits
+                if (ptSpeed.length > 4) { alert("Speed input cannot exceed 4 digits. Please reset the inputs.") }
+                else if (Math.abs(ptSpeed) > spLimit) { alert("Speed input cannot exceed " + spLimit + " cm/s. Please reset the inputs.") }
+                else {
+                    let placeHolder = 0;
+                    placeHolder = 4 - ptSpeed.length;
+                    for (let i = 1; i <= placeHolder; i++) {
+                        ptSpeed = (ptSpeed + "x");
+                    }
+                    console.log("Point turn maneuver commanded");
+                    console.log(this.state.pointSpeed);
+                    console.log(ptSpeed);
+                    console.log(ptDirection);
+                    let cmd = (ptSpeed + ptDirection);
+                    console.log(cmd)
+                    this.props.rover.queueMessage(0xE2, cmd);
+                };
+                break;
+            case 0xE3: //Sunken Wheel
+                let skManeuver = this.state.sunkManeuver;
+                switch (skManeuver) {
+                    case "Maneuver 1":
+                        skManeuver = "1"
+                        break;
+                    case "Maneuver 2":
+                        skManeuver = "2"
+                        break;
+                    case "Maneuver 3":
+                        skManeuver = "3"
+                        break;
+                    case "Maneuver 4":
+                        skManeuver = "4"
+                        break;
+                    default:
+                        { console.log("Please select a maneuver") }
+                        break;
+                }
+                console.log("Sunken wheel maneuver commanded");
+                console.log(this.state.sunkManeuver);
+                console.log(skManeuver);
+                let cmd = (skManeuver);
+                console.log(cmd)
+                this.props.rover.queueMessage(0xE3, cmd);
+                break;
+            default:
+                console.log("Maneuver command error");
+                break;
+        }
+    }
+
+    handleCommandChange(event) {
+        this.setState({
+            [event.target.name]: event.target.value
+        });
+    }
+
     render() {
         return <Box justify="center" pad={{ "top": "none", "bottom": "small", "left": "small", "right": "small" }} className="tabContents" animation={{ "type": "fadeIn", "size": "small" }} direction="row" align="stretch" fill hoverIndicator={false}>
-            <StyledCard title="Remote Control" max>
-                {(this.props.roverState.status !== 0x02 && this.props.roverState.status && this.props.roverState.voltage !== undefined && this.props.roverState.voltage <= 13.2) && <Heading alignSelf="center" level={6} margin="none">Battery low! Can't start motor control.</Heading>}
-                {this.props.roverState.status !== 0x02 && <Button margin={{ "top": "small", "bottom": "small", "left": "none", "right": "none" }} label="Start Control" color={this.props.roverState.status ? "brand" : "status-unknown"} disabled={(this.props.roverState.status && this.props.roverState.voltage !== undefined && this.props.roverState.voltage > 13.2) ? false : true} onClick={this.handleDriveStart} icon={<Power />} primary />}
-                {this.props.roverState.status === 0x02 && <Button margin={{ "top": "small", "bottom": "small", "left": "none", "right": "none" }} label="STOP MOTORS" color="status-critical" onClick={this.handleDriveStop} icon={<Halt />} primary />}
-                <Heading alignSelf="center" level={6} margin="none">Keyboard/gamepad controls {this.props.roverState.status === 0x02 ? "available" : "disabled"}</Heading>
-                <Collapsible direction="vertical" open={this.props.roverState.status === 2}>
-                    <Box align="center" justify="around" margin={{ "top": "small", "bottom": "small" }} direction="column" gap="small">
-                        <Box direction="row">
-                            <Button
-                                plain={false}
-                                disabled={this.props.roverState.status !== 2}
-                                className="btouch"
-                                icon={<CaretUp color="brand" />}
-                                onClick={() => {
-                                    //props.setValue(props.value - 1);
-                                }}
-                                onMouseDown={(event) => this.handleDPad(event, "51")}
-                                onMouseUp={(event) => this.handleDPad(event, "50")}
-                                onMouseLeave={(event) => this.handleDPad(event, "50")}
-                                onTouchStart={(event) => this.handleDPad(event, "51", false)}
-                                onTouchEnd={(event) => this.handleDPad(event, "50")}
-                            />
-                        </Box>
-                        <Box direction="row" gap="small">
-                            <Button
-                                plain={false}
-                                disabled={this.props.roverState.status !== 2}
-                                className="btouch"
-                                icon={<CaretPrevious color="brand" />}
-                                onClick={() => {
-                                    //props.setValue(props.value - 1);
-                                }}
-                                onMouseDown={(event) => this.handleDPad(event, "71")}
-                                onMouseUp={(event) => this.handleDPad(event, "70")}
-                                onMouseLeave={(event) => this.handleDPad(event, "70")}
-                                onTouchStart={(event) => this.handleDPad(event, "71", false)}
-                                onTouchEnd={(event) => this.handleDPad(event, "70")}
-                            />
-                            <Button
-                                plain={false}
-                                disabled={true}
-                                icon={<Subtract color="none" />}
-                            />
-                            <Button
-                                plain={false}
-                                disabled={this.props.roverState.status !== 2}
-                                className="btouch"
-                                icon={<CaretNext color="brand" />}
-                                onClick={() => {
-                                    //props.setValue(props.value - 1);
-                                }}
-                                onMouseDown={(event) => this.handleDPad(event, "81")}
-                                onMouseUp={(event) => this.handleDPad(event, "80")}
-                                onMouseLeave={(event) => this.handleDPad(event, "80")}
-                                onTouchStart={(event) => this.handleDPad(event, "81", false)}
-                                onTouchEnd={(event) => this.handleDPad(event, "80")}
-                            />
-                        </Box>
-                        <Box direction="row">
-                            <Button
-                                plain={false}
-                                disabled={this.props.roverState.status !== 2}
-                                className="btouch"
-                                icon={<CaretDown color="brand" />}
-                                onClick={() => {
-                                    //props.setValue(props.value - 1);
-                                }}
-                                onMouseDown={(event) => this.handleDPad(event, "61")}
-                                onMouseUp={(event) => this.handleDPad(event, "60")}
-                                onMouseLeave={(event) => this.handleDPad(event, "60")}
-                                onTouchStart={(event) => this.handleDPad(event, "61", false)}
-                                onTouchEnd={(event) => this.handleDPad(event, "60")}
-                            />
-                        </Box>
-                    </Box>
-                    <SettingsGroup name={"Speed Target: " + (this.props.roverState.speed ? this.props.roverState.speed : "-")}>
-                        <Bounds enable={this.props.roverState.status === 2} value={this.props.roverState.speed} setDPad={this.handleDPad} setValue={this.handleSpeedChange} />
-                    </SettingsGroup>
-                </Collapsible>
-            </StyledCard>
             <StyledCard title="Controller State" centered wide>
                 <ResponsiveContext.Consumer>
                     {size => (
@@ -248,30 +311,162 @@ class TabDrive extends React.Component {
 
                 </ResponsiveContext.Consumer>
             </StyledCard>
-            <StyledCard title="Keyboard Controls">
+            <StyledCard title="Driving Maneuvers" wide>
+                <Button margin={{ "top": "small", "bottom": "small", "left": "none", "right": "none" }} label="STOP MOTORS" color="status-critical" onClick={this.handleDriveStop} icon={<Halt />} primary />
                 <Box justify="center" >
-                    <Box gap="small" alignContent="center" margin={{ "top": "small", "bottom": "small", "left": "medium", "right": "medium" }}>
-                        <Text textAlign="center">Stop motors & control</Text>
-                        <Image src={(ls.get('lightMode') || false) ? escLight : escDark} />
+                    <Box gap="small" alignContent="center" margin={{ "top": "small", "bottom": "small", "left": "small", "right": "medium" }}>
+                        <Text textAlign="start">Select Driving Maneuver</Text>
                     </Box>
-                    <Distribution
-                        values={[
-                            { value: 50, image: (ls.get('lightMode') || false) ? wasdLight : wasdDark, title: "Move", text: "WASD keys" },
-                            { value: 50, image: (ls.get('lightMode') || false) ? arrowLight : arrowDark, title: "Decrease/increase speed", text: "Arrow up/down" },
-                        ]}
-                        gap="medium"
-                        alignSelf="center"
-                        pad={{ "top": "small", "bottom": "small", "left": "medium", "right": "medium" }}
-                        width={{ 'max': "375px" }}
-                    >
-                        {value => (
-                            <Box fill gap="small" justify="end" alignContent="center">
-                                <Text textAlign="center">{value.title}</Text>
-                                <Image src={value.image} />
-                            </Box>
-                        )}
-                    </Distribution>
                 </Box>
+                <Tabs>
+                    <Tab title="Straight Drive">
+                        <Form
+                            value={this.value}
+                            onReset={(event) => {
+                                this.setState({
+                                    straightSpeed: this.defaultValue.straightSpeed
+                                });
+                                console.log('Reset', event.value, event.touched)
+                            }}
+                            onSubmit={(event) => {
+                                console.log('Submit', event.value, event.touched)
+                                this.logs(event.value)
+                                this.handleManeuver(event, 0xE0)
+                                }
+                            }
+                            //onChange={() => this.onChange(this.event.value)}
+                        >
+                            <FormField label="Enter Speed in cm/s" name="straightSpeed" required>
+                                <TextInput
+                                    name="straightSpeed"
+                                    type="text"
+                                    placeholder="Type here!"
+                                    value={this.state.straightSpeed}
+                                    onChange={this.handleCommandChange}
+                                />
+                            </FormField>
+                            <Box direction="row" justify="between" margin={{ top: 'medium' }}>
+                                <Button type="reset" label="Reset" />
+                                <Button type="submit" label="Update" primary />
+                            </Box>
+                        </Form>
+                    </Tab>
+                    <Tab title="Turn">
+                        <Form
+                            value={this.value}
+                            onReset={(event) => {
+                                this.setState({
+                                    turnSpeed: this.defaultValue.turnSpeed,
+                                    turnRadius: this.defaultValue.turnRadius
+                                });
+                            }}
+                            onSubmit={(event) => {
+                                console.log('Submit', event.value, event.touched)
+                                this.logs(event.value)
+                                this.handleManeuver(event, 0xE1)
+                                }
+                            }
+                        >
+                            <FormField label="Enter Average Speed in cm/s" name="turnSpeed" required>
+                                <TextInput
+                                    name="turnSpeed"
+                                    type="text"
+                                    placeholder="Type here!"
+                                    value={this.state.turnSpeed}
+                                    onChange={this.handleCommandChange}
+                                />
+                            </FormField>
+                            <FormField label="Enter Radius of Curvature in cm" name="turnRadius" required>
+                                <TextInput
+                                    name="turnRadius"
+                                    type="text"
+                                    placeholder="Type here!"
+                                    value={this.state.turnRadius}
+                                    onChange={this.handleCommandChange}
+                                />
+                            </FormField>
+                            <FormField name="turnDirection" required>
+                                <RadioButtonGroup
+                                    name="turnDirection"
+                                    options={['Right turn', 'Left turn']}
+                                    value={this.state.turnDirection}
+                                    onChange={this.handleCommandChange}
+                                />
+                            </FormField>
+                            <Box direction="row" justify="between" margin={{ top: 'medium' }}>
+                                <Button type="reset" label="Reset" />
+                                <Button type="submit" label="Update" primary />
+                            </Box>
+                        </Form>
+                    </Tab>
+                    <Tab title="Point Turn">
+                        <Form
+                            value={this.value}
+                            onReset={(event) => {
+                                this.setState({
+                                    pointSpeed: this.defaultValue.pointSpeed,
+                                    pointDirection: this.defaultValue.pointDirection
+                                });
+                            }}
+                            onSubmit={(event) => {
+                                console.log('Submit', event.value, event.touched)
+                                this.logs(event.value)
+                                this.handleManeuver(event, 0xE2)
+                            }
+                            }
+                        >
+                            <FormField label="Enter Speed in cm/s" name="pointSpeed" required>
+                                <TextInput
+                                    name="pointSpeed"
+                                    type="text"
+                                    placeholder="Type here!"
+                                    value={this.state.pointSpeed}
+                                    onChange={this.handleCommandChange}
+                                />
+                            </FormField>
+                            <FormField name="pointDirection" required>
+                                <RadioButtonGroup
+                                    name="pointDirection"
+                                    options={['Right turn', 'Left turn']}
+                                    value={this.state.pointDirection}
+                                    onChange={this.handleCommandChange}
+                                />
+                            </FormField>
+                            <Box direction="row" justify="between" margin={{ top: 'medium' }}>
+                                <Button type="reset" label="Reset" />
+                                <Button type="submit" label="Update" primary />
+                            </Box>
+                        </Form>
+                    </Tab>
+                    <Tab title="Sunken Wheel">
+                        <Form
+                            value={this.value}
+                            onReset={(event) => {
+                                this.setState({
+                                });
+                            }}
+                            onSubmit={(event) => {
+                                console.log('Submit', event.value, event.touched)
+                                this.logs(event.value)
+                                this.handleManeuver(event, 0xE3)
+                            }
+                            }
+                        >
+                            <FormField name="sunkManeuver" required>
+                                <RadioButtonGroup
+                                    name="sunkManeuver"
+                                    options={['Maneuver 1', 'Maneuver 2', 'Maneuver 3', 'Maneuver 4']}
+                                    value={this.state.sunkManeuver}
+                                    onChange={this.handleCommandChange}
+                                />
+                            </FormField>
+                            <Box direction="row" justify="between" margin={{ top: 'medium' }}>
+                                <Button type="reset" label="Reset" />
+                                <Button type="submit" label="Update" primary />
+                            </Box>
+                        </Form>
+                    </Tab>
+                </Tabs>
             </StyledCard>
         </Box>;
     }

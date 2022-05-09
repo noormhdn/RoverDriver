@@ -4,10 +4,13 @@
   MECH 462 Team 07
 
   Created in February 2021, Angelo L
+
+  Updated in March 2022 to include specific driving maneuvers, Alexandre F (Concordia University, MECH 490, Team 20)
 */
 #include <Arduino.h>
 #include <JrkG2.h>
 #include <Wire.h>
+#include <math.h>
 
 #include "multiChannelRelay.h"
 #include "packetParser.h"
@@ -25,6 +28,17 @@ bool b_forward, b_reverse, b_left, b_right;
 int _right_target = 2048;
 int _left_target = 2048;
 
+int CPR = 4096; //Counts per rotation of encoder
+float wheelRadius = 0.215;
+float pi_cst = 3.1416;
+int pulse_timing_clock_freq = 1500000;
+int freqDivider = 32;
+float trackWidth = 0.6274; //in m
+float steerEfficiency = 1.45; //dependent on terrain type
+
+//int motionDirFactor = 1;
+//int metricSpeed = 2048;
+
 // Motor controllers
 JrkG2I2C jrkFR(I2C_JRK_FRONT_RIGHT);
 JrkG2I2C jrkFL(I2C_JRK_FRONT_LEFT);
@@ -39,6 +53,7 @@ void setup() {
   DEBUG_PRINTLN(F("Board setup"));
   // Set up I2C.
   Wire.begin();
+  pinMode(LED_BUILTIN, OUTPUT);
 
   setConnectCallback(connect_callback_main);
   setDisconnectCallback(disconnect_callback_main);
@@ -247,6 +262,11 @@ void calculateMotorTargets() {
   _left_target = round(lMotorTarget);
 }
 
+int calculateTargetSpeed(int motionDirFactor, float metricSpeed){
+  int targetSpeed = 2048+motionDirFactor*(pow(2,26)*metricSpeed/100*CPR)/(4*pi_cst*wheelRadius*pulse_timing_clock_freq*freqDivider);
+  return targetSpeed;
+}
+
 void handleRX(uint8_t len) {
   printHex(packetbuffer, len);
   switch (packetbuffer[1]) {
@@ -362,6 +382,223 @@ void handleRX(uint8_t len) {
       jrkRL.getErrorFlagsHalting();
       break;
     }
+    case RX_STRAIGHT_DRIVE: {
+      // setMode(MODE_CONTROLLED);
+      digitalWrite(PIN_LED_MODE_0, LOW);
+      digitalWrite(PIN_LED_MODE_1, LOW);
+      digitalWrite(PIN_LED_MODE_2, HIGH);
+      uint8_t stSpeed = 0;
+      char motionDirection = packetbuffer[2];
+      int motionDirFactor = 1;
+      if (motionDirection == '-'){
+        motionDirFactor = -1;
+        stSpeed = parseint(packetbuffer + 3);
+      }
+      else {
+        motionDirFactor = 1;
+        stSpeed = parseint(packetbuffer + 2);
+      }
+      int targetSpeed = calculateTargetSpeed(motionDirFactor,stSpeed);
+      jrkFR.setTarget(4095-targetSpeed);
+      jrkRR.setTarget(4095-targetSpeed);
+      jrkFL.setTarget(targetSpeed);
+      jrkRL.setTarget(targetSpeed);
+      break;
+    }
+    case RX_TURN: {
+      // setMode(MODE_CONTROLLED);
+      uint8_t tuSpeed = 0;
+      uint8_t tuRadiusInt = 100;
+      char tuDirection = 'R';
+      float tuSpeedInner = 0;
+      float tuSpeedOuter = 0;
+      char motionDirection = packetbuffer[2];
+      int motionDirFactor = 1;
+      if (motionDirection == '-'){
+        motionDirFactor = -1;
+        tuSpeed = parseint(packetbuffer + 3);
+      }
+      else {
+        motionDirFactor = 1;
+        tuSpeed = parseint(packetbuffer + 2);
+      }
+      tuRadiusInt = parseint(packetbuffer + 6);
+      tuDirection = packetbuffer[10];
+      int targetSpeedInner = 2048;
+      int targetSpeedOuter = 2048;
+      float tuRadius = tuRadiusInt;
+      tuSpeedInner = (2-0.5*(trackWidth*steerEfficiency/(tuRadius/100)+2))*tuSpeed;
+      tuSpeedOuter = 0.5*(trackWidth*steerEfficiency/(tuRadius/100)+2)*tuSpeed;
+      targetSpeedInner = calculateTargetSpeed(motionDirFactor,tuSpeedInner);
+      targetSpeedOuter = calculateTargetSpeed(motionDirFactor,tuSpeedOuter);
+      if (tuDirection == 'R'){
+        jrkFR.setTarget(4095-targetSpeedInner);
+        jrkRR.setTarget(4095-targetSpeedInner);
+        jrkFL.setTarget(targetSpeedOuter);
+        jrkRL.setTarget(targetSpeedOuter);
+      }
+      else if (tuDirection == 'L'){
+        jrkFR.setTarget(4095-targetSpeedOuter);
+        jrkRR.setTarget(4095-targetSpeedOuter);
+        jrkFL.setTarget(targetSpeedInner);
+        jrkRL.setTarget(targetSpeedInner);
+      }
+      else{
+        DEBUG_PRINTLN(F("Turn direction error"));
+      }
+      break;
+    }
+    case RX_POINT_TURN: {
+      // setMode(MODE_CONTROLLED);
+      uint8_t ptSpeed = 0;
+      char ptDirection = 'R';
+      char motionDirection = packetbuffer[2];
+      int motionDirFactor = 1;
+      if (motionDirection == '-'){
+        motionDirFactor = -1;
+        ptSpeed = parseint(packetbuffer + 3);
+      }
+      else {
+        motionDirFactor = 1;
+        ptSpeed = parseint(packetbuffer + 2);
+      }
+      ptDirection = packetbuffer[6];
+      int targetSpeed = 2048;
+      targetSpeed = calculateTargetSpeed(motionDirFactor,ptSpeed);
+      if (ptDirection == 'R'){
+        jrkFR.setTarget(targetSpeed);
+        jrkRR.setTarget(targetSpeed);
+        jrkFL.setTarget(targetSpeed);
+        jrkRL.setTarget(targetSpeed);
+      }
+      else if (ptDirection == 'L'){
+        jrkFR.setTarget(4095-targetSpeed);
+        jrkRR.setTarget(4095-targetSpeed);
+        jrkFL.setTarget(4095-targetSpeed);
+        jrkRL.setTarget(4095-targetSpeed);
+      }
+      else{
+        DEBUG_PRINTLN(F("Turn direction error"));
+      }
+      break;
+    }
+    case RX_SUNKEN_WHEEL: {
+      char maneuverID = packetbuffer[2];
+      if (maneuverID == '1'){
+        // -5 cm/s for 3s
+        int targetSpeed = calculateTargetSpeed(-1,5);
+        jrkFR.setTarget(4095-targetSpeed);
+        jrkRR.setTarget(4095-targetSpeed);
+        jrkFL.setTarget(targetSpeed);
+        jrkRL.setTarget(targetSpeed);
+        delay(3000);
+        // 5 cm/s for 3s
+        targetSpeed = calculateTargetSpeed(1,5);
+        jrkFR.setTarget(4095-targetSpeed);
+        jrkRR.setTarget(4095-targetSpeed);
+        jrkFL.setTarget(targetSpeed);
+        jrkRL.setTarget(targetSpeed);
+        delay(3000);
+        // -5 cm/s for 3s
+        targetSpeed = calculateTargetSpeed(-1,5);
+        jrkFR.setTarget(4095-targetSpeed);
+        jrkRR.setTarget(4095-targetSpeed);
+        jrkFL.setTarget(targetSpeed);
+        jrkRL.setTarget(targetSpeed);
+        delay(3000);
+      }
+      else if (maneuverID == '2'){
+        // Right Point Turn at 10 cm/s
+        int targetSpeed = calculateTargetSpeed(1,10);
+        jrkFR.setTarget(targetSpeed);
+        jrkRR.setTarget(targetSpeed);
+        jrkFL.setTarget(targetSpeed);
+        jrkRL.setTarget(targetSpeed);
+        delay(3000);
+        // Backwards Turn at 10 cm/s
+        float tuRadius = 50;
+        int tuSpeedInner = (2-0.5*(trackWidth*steerEfficiency/(tuRadius/100)+2))*10;
+        int tuSpeedOuter = 0.5*(trackWidth*steerEfficiency/(tuRadius/100)+2)*10;
+        int targetSpeedInner = calculateTargetSpeed(-1,tuSpeedInner);
+        int targetSpeedOuter = calculateTargetSpeed(-1,tuSpeedOuter);
+        jrkFR.setTarget(4095-targetSpeedInner);
+        jrkRR.setTarget(4095-targetSpeedInner);
+        jrkFL.setTarget(targetSpeedOuter);
+        jrkRL.setTarget(targetSpeedOuter);
+        delay(3000);
+      }
+      else if (maneuverID == '3'){
+        // Right Point Turn at 10 cm/s
+        int targetSpeed = calculateTargetSpeed(1,10);
+        jrkFR.setTarget(targetSpeed);
+        jrkRR.setTarget(targetSpeed);
+        jrkFL.setTarget(targetSpeed);
+        jrkRL.setTarget(targetSpeed);
+        delay(3000);        
+        // Left Point Turn at 10 cm/s
+        targetSpeed = calculateTargetSpeed(1,10);
+        jrkFR.setTarget(4095-targetSpeed);
+        jrkRR.setTarget(4095-targetSpeed);
+        jrkFL.setTarget(4095-targetSpeed);
+        jrkRL.setTarget(4095-targetSpeed);
+        delay(3000);
+        // -5 cm/s for 3s
+        targetSpeed = calculateTargetSpeed(-1,10);
+        jrkFR.setTarget(4095-targetSpeed);
+        jrkRR.setTarget(4095-targetSpeed);
+        jrkFL.setTarget(targetSpeed);
+        jrkRL.setTarget(targetSpeed);
+        delay(3000);
+      }
+      else if (maneuverID == '4'){
+        // One-side on at 10 cm/s
+        float tuRadius = 31;
+        int tuSpeedInner = (2-0.5*(trackWidth*steerEfficiency/(tuRadius/100)+2))*10;
+        int tuSpeedOuter = 0.5*(trackWidth*steerEfficiency/(tuRadius/100)+2)*10;
+        int targetSpeedInner = calculateTargetSpeed(1,tuSpeedInner);
+        int targetSpeedOuter = calculateTargetSpeed(1,tuSpeedOuter);
+        jrkFR.setTarget(4095-targetSpeedInner);
+        jrkRR.setTarget(4095-targetSpeedInner);
+        jrkFL.setTarget(targetSpeedOuter);
+        jrkRL.setTarget(targetSpeedOuter);
+        delay(3000);
+        // Backwards Turn at 10 cm/s
+        tuRadius = 50;
+        tuSpeedInner = (2-0.5*(trackWidth*steerEfficiency/(tuRadius/100)+2))*10;
+        tuSpeedOuter = 0.5*(trackWidth*steerEfficiency/(tuRadius/100)+2)*10;
+        targetSpeedInner = calculateTargetSpeed(-1,tuSpeedInner);
+        targetSpeedOuter = calculateTargetSpeed(-1,tuSpeedOuter);
+        jrkFR.setTarget(4095-targetSpeedInner);
+        jrkRR.setTarget(4095-targetSpeedInner);
+        jrkFL.setTarget(targetSpeedOuter);
+        jrkRL.setTarget(targetSpeedOuter);
+        delay(3000);
+        // -10 cm/s for 3s
+        int targetSpeed = calculateTargetSpeed(-1,10);
+        jrkFR.setTarget(4095-targetSpeed);
+        jrkRR.setTarget(4095-targetSpeed);
+        jrkFL.setTarget(targetSpeed);
+        jrkRL.setTarget(targetSpeed);
+        delay(3000);
+        // 5 cm/s for 3s
+        targetSpeed = calculateTargetSpeed(1,10);
+        jrkFR.setTarget(4095-targetSpeed);
+        jrkRR.setTarget(4095-targetSpeed);
+        jrkFL.setTarget(targetSpeed);
+        jrkRL.setTarget(targetSpeed);
+        delay(3000);
+        // -5 cm/s for 3s
+        targetSpeed = calculateTargetSpeed(-1,10);
+        jrkFR.setTarget(4095-targetSpeed);
+        jrkRR.setTarget(4095-targetSpeed);
+        jrkFL.setTarget(targetSpeed);
+        jrkRL.setTarget(targetSpeed);
+        delay(3000);        
+      }
+      else {
+        DEBUG_PRINTLN(F("Maneuver selection error"));
+      }
+    }    
     default:
       DEBUG_PRINTLN(F("Can't match message"));
       break;

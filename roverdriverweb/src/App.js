@@ -121,47 +121,47 @@ class App extends React.Component {
       });
   }
 
-  handleKeyDown = (event) => {
-    if (event.repeat !== true && this.state.isConnected && this.state.roverState.status === 2) {
-      event.preventDefault();
-      event.stopPropagation();
-      let downData = "";
-      switch (event.keyCode) {
-        case (87):
-          // W
-          downData = "51";
-          break;
-        case (65):
-          // A
-          downData = "71";
-          break;
-        case (83):
-          // S
-          downData = "61";
-          break;
-        case (68):
-          // D
-          downData = "81";
-          break;
-        case (39):
-          // Up arrow
-          downData = "11";
-          break;
-        case (37):
-          // Down arrow
-          downData = "21";
-          break;
-        default:
-          console.log("Down: " + event.keyCode);
-      }
-      if (downData !== "") {
-        this.state.rover.queueKey(0xCA, downData);
-      } else if (event.keyCode === 27) {
-        // Esc pressed, disable control
-        this.state.rover.queueSubject(0xC0);
-      }
-    }
-  }
+  //handleKeyDown = (event) => {
+  //  if (event.repeat !== true && this.state.isConnected && this.state.roverState.status === 2) {
+  //    event.preventDefault();
+  //    event.stopPropagation();
+  //    let downData = "";
+  //    switch (event.keyCode) {
+  //      case (87):
+  //        // W
+  //        downData = "51";
+  //        break;
+  //      case (65):
+  //        // A
+  //        downData = "71";
+  //        break;
+  //      case (83):
+  //        // S
+  //        downData = "61";
+  //        break;
+  //      case (68):
+  //        // D
+  //        downData = "81";
+  //        break;
+  //      case (39):
+  //        // Up arrow
+  //        downData = "11";
+  //        break;
+  //      case (37):
+  //        // Down arrow
+  //        downData = "21";
+  //        break;
+  //      default:
+  //        console.log("Down: " + event.keyCode);
+  //    }
+  //    if (downData !== "") {
+  //      this.state.rover.queueKey(0xCA, downData);
+  //    } else if (event.keyCode === 27) {
+  //      // Esc pressed, disable control
+  //      this.state.rover.queueSubject(0xC0);
+  //    }
+  //  }
+  //}
 
   handleKeyUp = (event) => {
     event.preventDefault();
