@@ -209,7 +209,7 @@ class NewTab extends React.Component {
     }
 }
 
-export default NewTab;
+export default TabDrive;
 
 const ControllerDiagram = (props) => {
     return (

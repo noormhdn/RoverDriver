@@ -765,30 +765,30 @@ class App extends React.Component {
                 <TabSettings onPreferenceUpdate={this.handlePreferenceUpdate} />
               </Tab> 
               <Tab title="NewTab" icon={<Info />}>
-                <NewTab rover={this.state.rover} roverController={this.state.roverController} />
-                  <Box justify="center" pad={{ "top": "none", "bottom": "small", "left": "small", "right": "small" }} className="tabContents" animation={{ "type": "fadeIn", "size": "small" }} direction="row" align="stretch" fill hoverIndicator={false}>
-                    <StyledCard title="System" >
-                      <StateBox icon={<Trigger size="medium" />} name="Battery" error={(this.state.roverState.status && this.state.roverState.voltage !== undefined && this.state.roverState.voltage <= 13.2) ? 1 : 0} unit="V" value={this.state.roverState.voltage !== undefined ? (Math.round(this.state.roverState.voltage * 100) / 100).toFixed(1) : "-"} />
-                      <StateBox icon={<Wifi size="medium" />} name="Signal strength" value={this.state.roverState.rssi ? this.state.roverState.rssi : "-"} />
-                      <StateBox icon={<Time size="medium" />} name="On time" value={!this.state.roverState.ontime && "-"}>
-                        {this.state.roverState.ontime && <Clock type="digital" time={this.state.roverState.ontime} />}
-                      </StateBox>
-                    </StyledCard>
-                    <StyledCard wide title="Acceleration" foottext={!(this.state.roverIMU.accel) && "waiting for data"}>
-                      {this.state.roverIMU.accel && (<>
-                        <Box align="center" justify="center">
-                          <MovingGraph data={this.state.roverIMU.accel} unit="m/s2" />
-                        </Box>
-                      </>)}
-                    </StyledCard>
-                    <StyledCard wide title="Angular velocity" foottext={!(this.state.roverIMU.gyro) && "waiting for data"}>
-                      {this.state.roverIMU.gyro && (<>
-                        <Box align="center" justify="center">
-                          <MovingGraph data={this.state.roverIMU.gyro} unit="°/s" />
-                        </Box>
-                      </>)}
-                    </StyledCard>
-                  </Box>
+              <NewTab rover={this.state.rover} roverController={this.state.roverController} />
+                <Box justify="center" pad={{ "top": "none", "bottom": "small", "left": "small", "right": "small" }} className="tabContents" animation={{ "type": "fadeIn", "size": "small" }} direction="row" align="stretch" fill hoverIndicator={false}>
+                  <StyledCard title="System" >
+                    <StateBox icon={<Trigger size="medium" />} name="Battery" error={(this.state.roverState.status && this.state.roverState.voltage !== undefined && this.state.roverState.voltage <= 13.2) ? 1 : 0} unit="V" value={this.state.roverState.voltage !== undefined ? (Math.round(this.state.roverState.voltage * 100) / 100).toFixed(1) : "-"} />
+                    <StateBox icon={<Wifi size="medium" />} name="Signal strength" value={this.state.roverState.rssi ? this.state.roverState.rssi : "-"} />
+                    <StateBox icon={<Time size="medium" />} name="On time" value={!this.state.roverState.ontime && "-"}>
+                      {this.state.roverState.ontime && <Clock type="digital" time={this.state.roverState.ontime} />}
+                    </StateBox>
+                  </StyledCard>
+                  <StyledCard wide title="Acceleration" foottext={!(this.state.roverIMU.accel) && "waiting for data"}>
+                    {this.state.roverIMU.accel && (<>
+                      <Box align="center" justify="center">
+                        <MovingGraph data={this.state.roverIMU.accel} unit="m/s2" />
+                      </Box>
+                    </>)}
+                  </StyledCard>
+                  <StyledCard wide title="Angular velocity" foottext={!(this.state.roverIMU.gyro) && "waiting for data"}>
+                    {this.state.roverIMU.gyro && (<>
+                      <Box align="center" justify="center">
+                        <MovingGraph data={this.state.roverIMU.gyro} unit="°/s" />
+                      </Box>
+                    </>)}
+                  </StyledCard>
+                </Box>
               </Tab>
             </Tabs>
           </Box>
