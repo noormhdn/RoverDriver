@@ -9,7 +9,7 @@ import './App.css';
 import ls from 'local-storage'
 import TabDrive from './TabDrive'
 import TabLog from './TabLog'
-import NewStatus from './NewStatus'
+import NewTab from './NewTab'
 import NewDrive from './NewDrive'
 import { LogFileService } from "./storage_service/logfile_service";
 import { Gamepad as GamepadHandler } from 'react-gamepad';
@@ -724,10 +724,48 @@ class App extends React.Component {
           </Header>
           <Box className="box_Content" fill="horizontal" width={{ "max": "1250px" }}>
             <Tabs justify="center" flex>
-              <Tab title="New Drive" icon={<Gamepad />} >
-                <NewDrive rover={this.state.rover} isConnected={this.state.isConnected} roverState={this.state.roverState} />
+              <Tab title="Status" icon={<Info />}>
+                <Box justify="center" pad={{ "top": "none", "bottom": "small", "left": "small", "right": "small" }} className="tabContents" animation={{ "type": "fadeIn", "size": "small" }} direction="row" align="stretch" fill hoverIndicator={false}>
+                  <StyledCard title="System" >
+                    <StateBox icon={<Trigger size="medium" />} name="Battery" error={(this.state.roverState.status && this.state.roverState.voltage !== undefined && this.state.roverState.voltage <= 13.2) ? 1 : 0} unit="V" value={this.state.roverState.voltage !== undefined ? (Math.round(this.state.roverState.voltage * 100) / 100).toFixed(1) : "-"} />
+                    <StateBox icon={<Wifi size="medium" />} name="Signal strength" value={this.state.roverState.rssi ? this.state.roverState.rssi : "-"} />
+                    <StateBox icon={<Time size="medium" />} name="On time" value={!this.state.roverState.ontime && "-"}>
+                      {this.state.roverState.ontime && <Clock type="digital" time={this.state.roverState.ontime} />}
+                    </StateBox>
+                  </StyledCard>
+                  <StyledCard wide title="Acceleration" foottext={!(this.state.roverIMU.accel) && "waiting for data"}>
+                    {this.state.roverIMU.accel && (<>
+                      <Box align="center" justify="center">
+                        <MovingGraph data={this.state.roverIMU.accel} unit="m/s2" />
+                      </Box>
+                    </>)}
+                  </StyledCard>
+                  <StyledCard wide title="Angular velocity" foottext={!(this.state.roverIMU.gyro) && "waiting for data"}>
+                    {this.state.roverIMU.gyro && (<>
+                      <Box align="center" justify="center">
+                        <MovingGraph data={this.state.roverIMU.gyro} unit="°/s" />
+                      </Box>
+                    </>)}
+                  </StyledCard>
+                  <StyledCard wide title="Magnetic field" foottext={!(this.state.roverIMU.field) && "waiting for data"}>
+                    {this.state.roverIMU.field && (<>
+                      <Box align="center" justify="center">
+                        <MovingGraph data={this.state.roverIMU.field} unit="uT" />
+                      </Box>
+                    </>)}
+                  </StyledCard>
+                </Box>
               </Tab>
-              <Tab title="New Status" icon={<Info />}>
+              <Tab title="Drive" icon={<Gamepad />} >
+                <TabDrive rover={this.state.rover} isConnected={this.state.isConnected} roverState={this.state.roverState} roverController={this.state.roverController} />
+              </Tab>
+              <Tab title="Log" plain={false} disabled={false} icon={<DocumentTest />}>
+                <TabLog isConnected={this.state.isConnected} roverState={this.state.roverState} isLogging={this.state.logging} startLogging={this.startLogging} stopLogging={this.stopLogging} />
+              </Tab>
+              <Tab title="Settings" plain={false} disabled={false} icon={<Configure />}>
+                <TabSettings onPreferenceUpdate={this.handlePreferenceUpdate} />
+              </Tab> 
+              <Tab title="NewTab" icon={<Info />}>
                   <Box justify="center" pad={{ "top": "none", "bottom": "small", "left": "small", "right": "small" }} className="tabContents" animation={{ "type": "fadeIn", "size": "small" }} direction="row" align="stretch" fill hoverIndicator={false}>
                     <StyledCard title="System" wide>
                       <StateBox icon={<Trigger size="medium" />} name="Battery" error={(this.state.roverState.status && this.state.roverState.voltage !== undefined && this.state.roverState.voltage <= 13.2) ? 1 : 0} unit="V" value={this.state.roverState.voltage !== undefined ? (Math.round(this.state.roverState.voltage * 100) / 100).toFixed(1) : "-"} />
@@ -737,7 +775,7 @@ class App extends React.Component {
                       </StateBox>
                     </StyledCard>
                     <StyledCard wide>
-                      <NewStatus rover={this.state.rover} roverController={this.state.roverController} />
+                      <NewTab rover={this.state.rover} roverController={this.state.roverController} />
                     </StyledCard>
                     <StyledCard wide title="Acceleration - should be Velocity" foottext={!(this.state.roverIMU.accel) && "Real velocity plot over time"}>
                       {this.state.roverIMU.accel && (<>
@@ -753,18 +791,17 @@ class App extends React.Component {
                         </Box>
                       </>)}
                     </StyledCard>
-                    <StyledCard wide title="OBC Status" foottext={"Temperatures data"}>
+                    <StyledCard wide title="Terminal" foottext={"waiting for data"}>
+                      {this.state.roverIMU.gyro && (<>
                         <Box align="center" justify="center">
                         </Box>
+                      </>)}
                     </StyledCard>
                   </Box>
               </Tab>
-              <Tab title="Log" plain={false} disabled={false} icon={<DocumentTest />}>
-                <TabLog isConnected={this.state.isConnected} roverState={this.state.roverState} isLogging={this.state.logging} startLogging={this.startLogging} stopLogging={this.stopLogging} />
+              <Tab title="New Drive" icon={<Gamepad />} >
+                <NewDrive rover={this.state.rover} isConnected={this.state.isConnected} roverState={this.state.roverState} />
               </Tab>
-              <Tab title="Settings" plain={false} disabled={false} icon={<Configure />}>
-                <TabSettings onPreferenceUpdate={this.handlePreferenceUpdate} />
-              </Tab> 
             </Tabs>
           </Box>
         </Box>

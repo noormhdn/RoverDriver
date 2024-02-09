@@ -753,7 +753,7 @@ class App extends React.Component {
                         </Box>
                       </>)}
                     </StyledCard>
-                    <StyledCard wide title="OBC Status" foottext={"Temperatures data"}>
+                    <StyledCard wide title="Terminal" foottext={"waiting for data"}>
                         <Box align="center" justify="center">
                         </Box>
                     </StyledCard>
