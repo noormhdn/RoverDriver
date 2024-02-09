@@ -218,7 +218,7 @@ class NewDrive extends React.Component {
                 <Box align="center" justify="center">
                     <Image
                         fit="cover"
-                        src="/Users/noor/Documents/GitHub/RoverDriver/roverdriverimages/funny.jpg"
+                        src="RoverDriver/roverdriverimages/funny.png"  {/* Replace with the actual path to your image */}
                         alt="PEEKbot Vision"
                     />
                 </Box>
