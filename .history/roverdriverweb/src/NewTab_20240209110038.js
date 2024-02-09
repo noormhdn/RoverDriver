@@ -108,8 +108,8 @@ class NewTab extends React.Component {
     }
 
     render() {
-        return <Box justify="center" pad={{ "top": "none", "bottom": "small", "left": "small", "right": "small" }} className="tabContents" animation={{ "type": "fadeIn", "size": "small" }} direction="row" align="stretch" fill hoverIndicator={false}>
-            <StyledCard title="Controller State - should not be a box in a box" wide>
+        return <Box justify="right" pad={{ "top": "none", "bottom": "small", "left": "small", "right": "small" }} className="tabContents" animation={{ "type": "fadeIn", "size": "small" }} direction="row" align="stretch" fill hoverIndicator={false}>
+            <StyledCard title="Controller State" wide>
                 <ResponsiveContext.Consumer>
                     {size => (
                         <Box align="center" justify="around" margin={{ "bottom": "small" }} direction="row" wrap={true}>

@@ -776,7 +776,7 @@ class App extends React.Component {
                     <StyledCard wide>
                       <NewTab rover={this.state.rover} roverController={this.state.roverController} />
                     </StyledCard>
-                    <StyledCard wide title="Acceleration - should be Velocity" foottext={!(this.state.roverIMU.accel) && "Real velocity plot over time"}>
+                    <StyledCard wide title="Acceleration - Should be Velocity" foottext={!(this.state.roverIMU.accel) && "Real velocity plot over time"}>
                       {this.state.roverIMU.accel && (<>
                         <Box align="center" justify="center">
                           <MovingGraph data={this.state.roverIMU.accel} unit="m/s2" />
