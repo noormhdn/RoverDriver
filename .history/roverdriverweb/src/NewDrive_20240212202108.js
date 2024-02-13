@@ -218,7 +218,7 @@ class NewDrive extends React.Component {
                 <Box align="center" justify="center">
                     <img
                         //style={{ objectFit: 'cover' }} // Adding style for object fit if needed
-                        src=""
+                        src="/Users/noor/Documents/GitHub/RoverDriver/roverdriverimages/funny.jpg"
                         alt="PEEKbot Vision - Insert .png exports from camera folder"
                     />
                 </Box>

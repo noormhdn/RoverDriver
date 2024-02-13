@@ -217,8 +217,8 @@ class NewDrive extends React.Component {
             <StyledCard title="PEEKbot Vision">
                 <Box align="center" justify="center">
                     <img
-                        //style={{ objectFit: 'cover' }} // Adding style for object fit if needed
-                        src=""
+                        style={{ objectFit: 'cover' }} // Adding style for object fit if needed
+                        src="https://legacy.reactjs.org/logo-og.png"
                         alt="PEEKbot Vision - Insert .png exports from camera folder"
                     />
                 </Box>

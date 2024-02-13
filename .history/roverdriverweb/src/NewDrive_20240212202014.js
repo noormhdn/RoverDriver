@@ -216,9 +216,9 @@ class NewDrive extends React.Component {
         return <Box justify="center" pad={{ "top": "none", "bottom": "small", "left": "small", "right": "small" }} className="tabContents" animation={{ "type": "fadeIn", "size": "small" }} direction="row" align="stretch" fill hoverIndicator={false}>
             <StyledCard title="PEEKbot Vision">
                 <Box align="center" justify="center">
-                    <img
-                        //style={{ objectFit: 'cover' }} // Adding style for object fit if needed
-                        src=""
+                    <Image
+                        style={{ objectFit: 'cover' }} // Adding style for object fit if needed
+                        src="/Users/noor/Documents/GitHub/RoverDriver/roverdriverimages/funny.jpg"
                         alt="PEEKbot Vision - Insert .png exports from camera folder"
                     />
                 </Box>
